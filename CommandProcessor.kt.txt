@@ -1,0 +1,355 @@
+package com.zai.assistant
+
+import android.content.ContentResolver
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.AlarmClock
+import android.provider.ContactsContract
+import android.provider.Settings
+import android.telephony.SmsManager
+import android.util.Log
+import android.widget.Toast
+import java.util.Calendar
+import java.util.Locale
+
+/**
+ * Разбирает распознанную фразу и выполняет соответствующее действие.
+ * Работает полностью офлайн — без сетевых запросов.
+ */
+class CommandProcessor(
+    private val context: Context,
+    private val onResult: (userText: String, answer: String) -> Unit
+) {
+
+    fun process(rawInput: String) {
+        val input = rawInput.lowercase(Locale.ROOT).trim()
+
+        // Фраза активации — отсекаем
+        var command = input
+        for (wake in WAKE_WORDS) {
+            if (command.startsWith(wake)) {
+                command = command.substring(wake.length).trim()
+                break
+            }
+        }
+
+        if (command.isBlank()) {
+            onResult(rawInput, "Слушаю вас. Дайте команду.")
+            return
+        }
+
+        Log.d(TAG, "processing: '$command'")
+
+        when {
+            command.startsWithAny("поставь будильник", "поставь будильник на",
+                                   "разбуди меня", "поставь alarm", "будильник на") -> {
+                handleAlarm(command, rawInput)
+            }
+            command.startsWithAny("таймер на", "поставь таймер", "засеки") -> {
+                handleTimer(command, rawInput)
+            }
+            command.startsWithAny("позвони", "набери", "сделай звонок", "вызови") -> {
+                handleCall(command, rawInput)
+            }
+            command.startsWithAny("напиши", "отправь sms", "отправь смс", "отправь сообщение",
+                                   "пос sms", "пос смс", "отправь letter") -> {
+                handleSms(command, rawInput)
+            }
+            command.startsWithAny("открой настройки", "открой настройки будильника") -> {
+                openAlarmSettings()
+                onResult(rawInput, "Открываю настройки будильника.")
+            }
+            command.startsWithAny("сколько времени", "который час", "сколько сейчас") -> {
+                tellTime()
+                onResult(rawInput, currentRuTime())
+            }
+            command.startsWithAny("какой сегодня день", "какая сегодня дата") -> {
+                onResult(rawInput, currentDateRu())
+            }
+            command.startsWithAny("привет", "здравствуй", "доброе утро", "добрый день",
+                                   "добрый вечер") -> {
+                onResult(rawInput, "Здравствуйте! Чем могу помочь?")
+            }
+            command.startsWithAny("спасибо", "благодарю") -> {
+                onResult(rawInput, "Пожалуйста! Обращайтесь.")
+            }
+            else -> {
+                onResult(rawInput, "Команда не распознана. Я могу: будильник, звонок, смс, таймер, время.")
+            }
+        }
+    }
+
+    // ---------- Будильник ----------
+    private fun handleAlarm(command: String, raw: String) {
+        val time = extractTime(command)
+        if (time == null) {
+            onResult(raw, "Не удалось распознать время. Пример: «поставь будильник на 7 утра».")
+            return
+        }
+        val (hour, minute) = time
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            if (before(Calendar.getInstance())) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+        val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
+            putExtra(AlarmClock.EXTRA_HOUR, hour)
+            putExtra(AlarmClock.EXTRA_MINUTES, minute)
+            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+            putExtra(AlarmClock.EXTRA_MESSAGE, "Ассистент")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            onResult(raw, "Не удалось открыть будильник: на устройстве нет приложения часов.")
+            return
+        }
+        val human = humanTimeRu(hour, minute)
+        onResult(raw, "Будильник установлен на $human.")
+    }
+
+    // ---------- Таймер ----------
+    private fun handleTimer(command: String, raw: String) {
+        val seconds = extractDurationSeconds(command)
+        if (seconds == null || seconds <= 0) {
+            onResult(raw, "Не распознал длительность. Пример: «таймер на 10 минут».")
+            return
+        }
+        val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
+            putExtra(AlarmClock.EXTRA_LENGTH, seconds)
+            putExtra(AlarmClock.EXTRA_MESSAGE, "Ассистент")
+            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+            onResult(raw, "Таймер на ${humanDuration(seconds)} запущен.")
+        } else {
+            onResult(raw, "На устройстве нет приложения таймера.")
+        }
+    }
+
+    // ---------- Звонок ----------
+    private fun handleCall(command: String, raw: String) {
+        // Убираем глагол и ищем имя контакта
+        val verbs = listOf("позвони", "набери", "сделай звонок", "вызови", "позвони на")
+        var name = command
+        for (v in verbs) {
+            if (name.startsWith(v)) {
+                name = name.substring(v.length).trim()
+                break
+            }
+        }
+        name = name.replace("контакт", "").trim()
+        if (name.isBlank()) {
+            onResult(raw, "Кому звонить? Назовите имя из телефонной книги.")
+            return
+        }
+
+        val phone = findContactPhone(name)
+        if (phone == null) {
+            onResult(raw, "Контакт «$name» не найден в телефонной книге.")
+            return
+        }
+        val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$phone")).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+        onResult(raw, "Звоню контакту «$name» ($phone).")
+    }
+
+    // ---------- SMS ----------
+    private fun handleSms(command: String, raw: String) {
+        // Формат: «напиши саше я опаздываю» или «отправь смс маме: я скоро буду»
+        val verbs = listOf("отправь sms", "отправь смс", "отправь сообщение",
+                            "напиши", "пос sms", "пос смс", "отправь letter")
+        var rest = command
+        for (v in verbs) {
+            if (rest.startsWith(v)) {
+                rest = rest.substring(v.length).trim()
+                break
+            }
+        }
+        // Разделяем имя и текст: имя — это первое слово (или два),
+        // остальное — текст. Возможны разделители «что», «со словами».
+        val separators = listOf(" что ", " со словами ", " текст ", ": ", " - ", " — ")
+        var name: String
+        var text: String
+        var sepIndex = -1
+        for (s in separators) {
+            val i = rest.indexOf(s)
+            if (i > 0 && (sepIndex == -1 || i < sepIndex)) {
+                sepIndex = i
+            }
+        }
+        if (sepIndex > 0) {
+            name = rest.substring(0, sepIndex).trim()
+            text = rest.substring(sepIndex).replaceFirst(
+                Regex("^( что | со словами | текст |: |-|—)"), ""
+            ).trim()
+        } else {
+            // Если нет явного разделителя — считаем, что первое слово это имя, остальное текст
+            val parts = rest.split(" ", limit = 2)
+            name = parts.getOrNull(0) ?: ""
+            text = parts.getOrNull(1) ?: ""
+        }
+        if (name.isBlank()) {
+            onResult(raw, "Кому отправить SMS? Назовите имя контакта.")
+            return
+        }
+        if (text.isBlank()) {
+            onResult(raw, "Что написать $name?")
+            return
+        }
+        val phone = findContactPhone(name)
+        if (phone == null) {
+            onResult(raw, "Контакт «$name» не найден в телефонной книге.")
+            return
+        }
+        try {
+            val sms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                context.getSystemService(SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                SmsManager.getDefault()
+            }
+            sms.sendTextMessage(phone, null, text, null, null)
+            onResult(raw, "Сообщение «$text» отправлено $name.")
+        } catch (e: Exception) {
+            Log.e(TAG, "sms failed", e)
+            onResult(raw, "Не удалось отправить SMS: ${e.message}")
+        }
+    }
+
+    // ---------- Поиск контакта ----------
+    private fun findContactPhone(name: String): String? {
+        val resolver: ContentResolver = context.contentResolver
+        // Сначала пробуем точное совпадение имени
+        val candidates = mutableListOf<Pair<String, String>>()
+        val cursor = resolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            arrayOf(
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                ContactsContract.CommonDataKinds.Phone.NUMBER
+            ),
+            null, null, null
+        )
+        cursor?.use {
+            val nameIdx = it.getColumnIndex(
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
+            )
+            val numIdx = it.getColumnIndex(
+                ContactsContract.CommonDataKinds.Phone.NUMBER
+            )
+            while (it.moveToNext()) {
+                val cName = it.getString(nameIdx) ?: continue
+                val cNum = it.getString(numIdx) ?: continue
+                val n = cName.lowercase(Locale.ROOT)
+                if (n == name || n.startsWith(name) || name.startsWith(n)) {
+                    candidates.add(cName to cNum)
+                }
+            }
+        }
+        return candidates.firstOrNull()?.second
+    }
+
+    // ---------- Время ----------
+    private fun tellTime() {
+        val time = currentRuTime()
+        Toast.makeText(context, time, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun currentRuTime(): String {
+        val cal = Calendar.getInstance()
+        val h = cal.get(Calendar.HOUR_OF_DAY)
+        val m = cal.get(Calendar.MINUTE)
+        return "Сейчас ${humanTimeRu(h, m)}."
+    }
+
+    private fun currentDateRu(): String {
+        val cal = Calendar.getInstance()
+        val months = arrayOf("января", "февраля", "марта", "апреля", "мая", "июня",
+            "июля", "августа", "сентября", "октября", "ноября", "декабря")
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        val month = months[cal.get(Calendar.MONTH)]
+        return "Сегодня $day $month."
+    }
+
+    // ---------- Открыть настройки будильника ----------
+    private fun openAlarmSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    }
+
+    // ---------- Утилиты извлечения времени ----------
+    private fun extractTime(command: String): Pair<Int, Int>? {
+        // Ищем "на 7", "на 7 утра", "на 7:30", "на пол восьмого"
+        val regexNum = Regex("(\\d{1,2})\\s*(?::|часов|часа|утра|вечера|дня|ночи)?\\s*(\\d{1,2})?")
+        val match = regexNum.find(command) ?: return null
+
+        var hour = match.groupValues[1].toIntOrNull() ?: return null
+        var minute = match.groupValues[2].toIntOrNull() ?: 0
+
+        if (hour > 23) return null
+        if (minute > 59) minute = 0
+
+        // Словесные подсказки AM/PM
+        val lower = command.lowercase(Locale.ROOT)
+        val hasEvening = listOf("вечера", "вечер", "пополудни", "pm").any { lower.contains(it) }
+        val hasMorning = listOf("утра", "утро", "am").any { lower.contains(it) }
+        if (hasEvening && hour < 12) hour += 12
+        if (hasMorning && hour == 24) hour = 0
+        return hour to minute
+    }
+
+    private fun extractDurationSeconds(command: String): Int? {
+        // Ищем «N минут», «N секунд», «N часов»
+        val regex = Regex("(\\d{1,3})\\s*(часов|часа|час|минут|минуты|минута|секунд|секунды|секунда)")
+        val match = regex.find(command) ?: return null
+        val value = match.groupValues[1].toIntOrNull() ?: return null
+        val unit = match.groupValues[2]
+        return when {
+            unit.startsWith("час") -> value * 3600
+            unit.startsWith("минут") || unit.startsWith("минуты") || unit.startsWith("минута") -> value * 60
+            else -> value
+        }
+    }
+
+    private fun humanTimeRu(h: Int, m: Int): String {
+        val hh = h.toString().padStart(2, '0')
+        val mm = m.toString().padStart(2, '0')
+        return "$hh:$mm"
+    }
+
+    private fun humanDuration(sec: Int): String {
+        val h = sec / 3600
+        val m = (sec % 3600) / 60
+        val s = sec % 60
+        return buildString {
+            if (h > 0) append("$h ч ")
+            if (m > 0) append("$m мин ")
+            if (s > 0) append("$s сек")
+        }.trim()
+    }
+
+    private fun String.startsWithAny(vararg prefixes: String): Boolean {
+        for (p in prefixes) if (this.startsWith(p)) return true
+        return false
+    }
+
+    companion object {
+        private const val TAG = "CommandProcessor"
+        private val WAKE_WORDS = listOf(
+            "окей ассистент", "эй ассистент", "ассистент", "okay assistant", "ok assistant"
+        )
+    }
+}

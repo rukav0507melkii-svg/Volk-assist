@@ -1,0 +1,34 @@
+package com.zai.assistant
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Telephony
+import android.telephony.SmsMessage
+
+/**
+ * Читает входящие SMS вслух через TTS в MainActivity.
+ */
+class SmsReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
+
+        val messages: Array<SmsMessage> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Telephony.Sms.Intents.getMessagesFromIntent(intent)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getSerializableExtra("pdus") as? Array<Any?> ?: emptyArray()
+        }.map { pdu ->
+            @Suppress("DEPRECATION")
+            SmsMessage.createFromPdu(pdu as ByteArray)
+        }.toTypedArray()
+
+        if (messages.isEmpty()) return
+        val sender = messages[0].displayOriginatingAddress ?: "Неизвестный номер"
+        val body = messages.joinToString("") { it.displayMessageBody ?: "" }
+
+        val text = "Входящее сообщение от $sender: $body"
+        MainActivity.instance?.speak(text)
+    }
+}

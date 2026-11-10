@@ -1,0 +1,37 @@
+package com.zai.assistant
+
+import android.content.Context
+
+/**
+ * Простое локальное хранилище настроек (SharedPreferences).
+ * Ничего не покидает телефон.
+ */
+object Prefs {
+    private const val NAME = "assistant_prefs"
+    private const val KEY_ONBOARDING_DONE = "onboarding_done"
+    private const val KEY_WAKE_ENABLED = "wake_enabled"
+    private const val KEY_VOICE_ANSWERS = "voice_answers"
+
+    private fun get(c: Context) =
+        c.getSharedPreferences(NAME, Context.MODE_PRIVATE)
+
+    fun isOnboardingDone(c: Context): Boolean = get(c).getBoolean(KEY_ONBOARDING_DONE, false)
+
+    fun setOnboardingDone(c: Context, value: Boolean) {
+        get(c).edit().putBoolean(KEY_ONBOARDING_DONE, value).apply()
+    }
+
+    /** Фоновое прослушивание фразы «Окей Ассистент» включено? */
+    fun isWakeEnabled(c: Context): Boolean = get(c).getBoolean(KEY_WAKE_ENABLED, true)
+
+    fun setWakeEnabled(c: Context, value: Boolean) {
+        get(c).edit().putBoolean(KEY_WAKE_ENABLED, value).apply()
+    }
+
+    /** Отвечать голосом вслух? */
+    fun isVoiceAnswersEnabled(c: Context): Boolean = get(c).getBoolean(KEY_VOICE_ANSWERS, true)
+
+    fun setVoiceAnswersEnabled(c: Context, value: Boolean) {
+        get(c).edit().putBoolean(KEY_VOICE_ANSWERS, value).apply()
+    }
+}

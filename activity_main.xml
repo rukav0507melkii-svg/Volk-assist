@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient"
+    android:fitsSystemWindows="true">
+
+    <!-- Заголовок -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="56dp"
+        android:gravity="center"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.08"
+        android:text="АССИСТЕНТ"
+        android:textColor="@color/neon_cyan"
+        android:textSize="22sp"
+        android:shadowColor="@color/neon_cyan"
+        android:shadowRadius="12"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Подзаголовок / статус -->
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="@string/welcome"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/titleText" />
+
+    <!-- Зона пульсации -->
+    <FrameLayout
+        android:id="@+id/micContainer"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_marginTop="40dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/statusText">
+
+        <!-- Кольца пульсации (скрыты по умолчанию) -->
+        <View
+            android:id="@+id/ring1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/ring_pulse"
+            android:alpha="0"
+            android:layout_gravity="center" />
+
+        <View
+            android:id="@+id/ring2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/ring_pulse"
+            android:alpha="0"
+            android:layout_gravity="center" />
+
+        <!-- Сама кнопка-микрофон -->
+        <ImageButton
+            android:id="@+id/micButton"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center"
+            android:background="@drawable/mic_button"
+            android:contentDescription="@string/tap_to_speak"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:scaleType="centerInside"
+            android:padding="36dp"
+            android:tint="@color/white"
+            tools:ignore="UseAppTint" />
+
+    </FrameLayout>
+
+    <!-- Текст последней команды -->
+    <TextView
+        android:id="@+id/heardText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:gravity="center"
+        android:minHeight="28dp"
+        android:textColor="@color/neon_cyan"
+        android:textSize="16sp"
+        android:textStyle="italic"
+        android:fontFamily="sans-serif-light"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/micContainer"
+        tools:text="«позвони маме»" />
+
+    <!-- Карточка ответа ассистента -->
+    <LinearLayout
+        android:id="@+id/answerCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/heardText">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ОТВЕТ АССИСТЕНТА"
+            android:textColor="@color/neon_pink"
+            android:textSize="11sp"
+            android:letterSpacing="0.1"
+            android:fontFamily="sans-serif-medium" />
+
+        <TextView
+            android:id="@+id/answerText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            tools:text="Звоню контакту «Мама»…" />
+    </LinearLayout>
+
+    <!-- Журнал команд -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/logList"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        android:overScrollMode="never"
+        app:layout_constraintBottom_toTopOf="@id/hintText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/answerCard" />
+
+    <!-- Подсказка снизу -->
+    <TextView
+        android:id="@+id/hintText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"
+        android:text="Примеры: «поставь будильник на 7 утра» · «позвони маме» · «напиши саше я опаздываю»"
+        android:textColor="#5A6188"
+        android:textSize="11sp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

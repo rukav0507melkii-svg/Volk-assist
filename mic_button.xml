@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Внешнее свечение -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/transparent" />
+            <stroke android:width="2dp" android:color="#3300F0FF" />
+        </shape>
+    </item>
+    <item android:left="10dp" android:right="10dp" android:top="10dp" android:bottom="10dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/transparent" />
+            <stroke android:width="2dp" android:color="#6600F0FF" />
+        </shape>
+    </item>
+    <item android:left="22dp" android:right="22dp" android:top="22dp" android:bottom="22dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="120"
+                android:startColor="@color/neon_purple"
+                android:endColor="@color/neon_blue" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <!-- Индикатор шагов -->
+    <LinearLayout
+        android:id="@+id/dotsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/dot1"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_margin="5dp" />
+
+        <View
+            android:id="@+id/dot2"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_margin="5dp" />
+
+        <View
+            android:id="@+id/dot3"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_margin="5dp" />
+
+        <View
+            android:id="@+id/dot4"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_margin="5dp" />
+
+        <View
+            android:id="@+id/dot5"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_margin="5dp" />
+    </LinearLayout>
+
+    <!-- Контейнер шагов -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- ШАГ 1: Знакомство -->
+        <LinearLayout
+            android:id="@+id/step1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp">
+
+            <FrameLayout
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:background="@drawable/mic_button">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="🎙"
+                    android:textSize="52sp" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="36dp"
+                android:text="Добро пожаловать!"
+                android:textColor="@color/text_primary"
+                android:textSize="26sp"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:text="Ваш личный голосовой ассистент.\nРаботает полностью офлайн — интернет не нужен:\nникакие данные не покидают телефон."
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/chip_bg"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="7dp"
+                    android:paddingBottom="7dp"
+                    android:layout_margin="4dp"
+                    android:text="Будильники"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/chip_bg"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="7dp"
+                    android:paddingBottom="7dp"
+                    android:layout_margin="4dp"
+                    android:text="Звонки"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/chip_bg"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="7dp"
+                    android:paddingBottom="7dp"
+                    android:layout_margin="4dp"
+                    android:text="SMS"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ШАГ 2: Разрешения -->
+        <LinearLayout
+            android:id="@+id/step2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="28dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Нужны разрешения"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                android:text="Данные остаются только на вашем телефоне"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <!-- Микрофон -->
+            <LinearLayout style="@style/PermRow">
+                <View
+                    android:id="@+id/dotMic"
+                    style="@style/PermDot" />
+                <LinearLayout style="@style/PermTexts">
+                    <TextView style="@style/PermTitle" android:text="Микрофон" />
+                    <TextView style="@style/PermDesc" android:text="Распознавание ваших команд" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Контакты -->
+            <LinearLayout style="@style/PermRow">
+                <View
+                    android:id="@+id/dotContacts"
+                    style="@style/PermDot" />
+                <LinearLayout style="@style/PermTexts">
+                    <TextView style="@style/PermTitle" android:text="Контакты" />
+                    <TextView style="@style/PermDesc" android:text="Поиск «позвони маме» в телефонной книге" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Телефон -->
+            <LinearLayout style="@style/PermRow">
+                <View
+                    android:id="@+id/dotPhone"
+                    style="@style/PermDot" />
+                <LinearLayout style="@style/PermTexts">
+                    <TextView style="@style/PermTitle" android:text="Телефон" />
+                    <TextView style="@style/PermDesc" android:text="Набор номера контакта" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- SMS -->
+            <LinearLayout style="@style/PermRow">
+                <View
+                    android:id="@+id/dotSms"
+                    style="@style/PermDot" />
+                <LinearLayout style="@style/PermTexts">
+                    <TextView style="@style/PermTitle" android:text="SMS" />
+                    <TextView style="@style/PermDesc" android:text="Отправка и чтение сообщений вслух" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Уведомления -->
+            <LinearLayout style="@style/PermRow">
+                <View
+                    android:id="@+id/dotNotif"
+                    style="@style/PermDot" />
+                <LinearLayout style="@style/PermTexts">
+                    <TextView style="@style/PermTitle" android:text="Уведомления" />
+                    <TextView style="@style/PermDesc" android:text="Фоновое прослушивание фразы активации" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ШАГ 3: Активация -->
+        <LinearLayout
+            android:id="@+id/step3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Как вас слушать"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:fontFamily="sans-serif-medium" />
+
+            <FrameLayout
+                android:layout_width="170dp"
+                android:layout_height="170dp"
+                android:layout_marginTop="28dp">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/ring_pulse"
+                    android:alpha="0.7" />
+
+                <TextView
+                    android:layout_width="110dp"
+                    android:layout_height="110dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/mic_button"
+                    android:gravity="center"
+                    android:text="🎙"
+                    android:textSize="40sp" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:gravity="center"
+                android:text="Просто скажите:"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="«Окей Ассистент»"
+                android:textColor="@color/neon_cyan"
+                android:textSize="22sp"
+                android:textStyle="italic"
+                android:shadowColor="@color/neon_cyan"
+                android:shadowRadius="14" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/wakeSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:padding="8dp"
+                android:text="Слушать фразу активации постоянно"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                app:thumbTint="@color/neon_cyan"
+                app:trackTint="@color/card_stroke" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="Можно и просто нажать на микрофон на главном экране"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- ШАГ 4: Обучение -->
+        <LinearLayout
+            android:id="@+id/step4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Попробуйте команды"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Нажмите на команду — ассистент произнесёт её вслух,\nа ниже покажет свой ответ"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="14dp"
+                android:scrollbars="none"
+                android:overScrollMode="never">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/cardAlarm"
+                        style="@style/TrainCard">
+                        <TextView style="@style/TrainCmd" android:text="«поставь будильник на 7 утра»" />
+                        <TextView style="@style/TrainAns" android:text="→ Будильник установлен на 07:00" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardTimer"
+                        style="@style/TrainCard">
+                        <TextView style="@style/TrainCmd" android:text="«таймер на 10 минут»" />
+                        <TextView style="@style/TrainAns" android:text="→ Таймер на 10 мин запущен" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardCall"
+                        style="@style/TrainCard">
+                        <TextView style="@style/TrainCmd" android:text="«позвони маме»" />
+                        <TextView style="@style/TrainAns" android:text="→ Звоню контакту «Мама»…" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardSms"
+                        style="@style/TrainCard">
+                        <TextView style="@style/TrainCmd" android:text="«напиши Саше я опаздываю»" />
+                        <TextView style="@style/TrainAns" android:text="→ Сообщение отправлено контакту Саша" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardTime"
+                        style="@style/TrainCard">
+                        <TextView style="@style/TrainCmd" android:text="«сколько времени»" />
+                        <TextView style="@style/TrainAns" android:text="→ Сейчас 14:30" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/demoAnswer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/card_bg"
+                        android:padding="14dp"
+                        android:textColor="@color/neon_cyan"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+
+        <!-- ШАГ 5: Готово -->
+        <LinearLayout
+            android:id="@+id/step5"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✓"
+                android:textColor="@color/perm_ok"
+                android:textSize="72sp"
+                android:fontFamily="sans-serif-light" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Всё готово!"
+                android:textColor="@color/text_primary"
+                android:textSize="26sp"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:text="Скажите «Окей Ассистент»\n— и я начну слушать ваши команды."
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Кнопки навигации -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="30dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/btn_ghost"
+            android:gravity="center"
+            android:text="Назад"
+            android:textColor="@color/neon_cyan"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/btnNext"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="2"
+            android:background="@drawable/chip_bg"
+            android:gravity="center"
+            android:text="Далее"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:fontFamily="sans-serif-medium" />
+    </LinearLayout>
+</LinearLayout>

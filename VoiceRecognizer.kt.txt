@@ -1,0 +1,168 @@
+package com.zai.assistant
+
+import android.content.Context
+import android.util.Log
+import org.json.JSONObject
+import org.vosk.Model
+import org.vosk.Recognizer
+import java.io.File
+import java.io.FileOutputStream
+
+/**
+ * Обёртка над Vosk для офлайн-распознавания русской речи.
+ * Модель модели-ru-small (≈50 МБ) лежит в res/raw и распаковывается в filesDir/models.
+ */
+class VoiceRecognizer(
+    private val context: Context,
+    private val listener: Listener
+) {
+    interface Listener {
+        fun onPartial(text: String)
+        fun onResult(text: String)
+        fun onReady()
+        fun onError(msg: String)
+    }
+
+    @Volatile private var recognizer: Recognizer? = null
+    @Volatile private var model: Model? = null
+    @Volatile private var running = false
+    private var thread: Thread? = null
+
+    private val sampleRate = 16000f
+
+    fun start() {
+        if (running) return
+        running = true
+        thread = Thread { runRecognition() }.apply { start() }
+    }
+
+    fun stop() {
+        running = false
+        thread?.interrupt()
+    }
+
+    fun destroy() {
+        stop()
+        recognizer?.close()
+        recognizer = null
+        model?.close()
+        model = null
+    }
+
+    private fun runRecognition() {
+        try {
+            val modelDir = ensureModel()
+            if (modelDir == null) {
+                listener.onError("Модель речи не найдена")
+                return
+            }
+            model = Model(modelDir.absolutePath)
+            recognizer = Recognizer(model, sampleRate)
+            listener.onReady()
+
+            val audioRecorder = AudioRecorder(sampleRate.toInt())
+            if (!audioRecorder.start()) {
+                listener.onError("Не удалось открыть микрофон")
+                return
+            }
+            val buffer = ShortArray(1600)
+            while (running) {
+                val read = audioRecorder.read(buffer)
+                if (read <= 0) continue
+                val bytes = shortArrayToByteArray(buffer, read)
+                if (recognizer!!.acceptWaveForm(bytes, bytes.size)) {
+                    val result = recognizer!!.result
+                    val text = parseText(result)
+                    if (text.isNotBlank()) {
+                        listener.onResult(text)
+                    }
+                } else {
+                    val partial = parseText(recognizer!!.partialResult)
+                    if (partial.isNotBlank()) {
+                        listener.onPartial(partial)
+                    }
+                }
+            }
+            audioRecorder.stop()
+        } catch (e: Exception) {
+            Log.e(TAG, "recognition error", e)
+            listener.onError(e.message ?: "unknown")
+        }
+    }
+
+    private fun parseText(json: String): String {
+        return try {
+            JSONObject(json).optString("text", "").trim()
+        } catch (_: Exception) { "" }
+    }
+
+    private fun shortArrayToByteArray(samples: ShortArray, count: Int): ByteArray {
+        val out = ByteArray(count * 2)
+        for (i in 0 until count) {
+            val v = samples[i]
+            out[i * 2] = (v.toInt() and 0xFF).toByte()
+            out[i * 2 + 1] = (v.toInt() shr 8 and 0xFF).toByte()
+        }
+        return out
+    }
+
+    /**
+     * Распаковывает модель из res/raw/vosk_model_ru_small (zip) в filesDir/model-ru.
+     * Если ресурса нет — приложение сообщает об ошибке распознавания.
+     */
+    private fun ensureModel(): File? {
+        val outDir = File(context.filesDir, "model-ru")
+        if (File(outDir, ".unpacked").exists()) return outDir
+
+        val rawId = context.resources.getIdentifier(
+            "vosk_model_ru_small", "raw", context.packageName
+        )
+        if (rawId == 0) {
+            listener.onError("Модель речи не встроена в APK")
+            return null
+        }
+        outDir.mkdirs()
+        return try {
+            val zipFile = File(context.cacheDir, "vosk_model_ru_small.zip")
+            context.resources.openRawResource(rawId).use { input ->
+                FileOutputStream(zipFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            unzip(zipFile, outDir)
+            zipFile.delete()
+            File(outDir, ".unpacked").createNewFile()
+            // Vosk-архивы обычно содержат одну вложенную папку вида vosk-model-small-ru-0.22
+            val children = outDir.listFiles()?.filter { it.isDirectory } ?: emptyList()
+            if (children.size == 1 && File(children[0], "conf").exists()) children[0] else outDir
+        } catch (e: Exception) {
+            Log.e(TAG, "model unpack failed", e)
+            null
+        }
+    }
+
+    /** Безопасная распаковка zip с защитой от path traversal. */
+    private fun unzip(zip: File, target: File) {
+        java.util.zip.ZipInputStream(zip.inputStream()).use { zis ->
+            var entry = zis.nextEntry
+            val canonicalTarget = target.canonicalFile
+            while (entry != null) {
+                val outFile = File(target, entry.name)
+                if (!outFile.canonicalFile.path.startsWith(canonicalTarget.path)) {
+                    throw SecurityException("Bad zip entry: ${entry.name}")
+                }
+                if (entry.isDirectory) {
+                    outFile.mkdirs()
+                } else {
+                    outFile.parentFile?.mkdirs()
+                    FileOutputStream(outFile).use { zis.copyTo(it) }
+                }
+                entry = zis.nextEntry
+            }
+        }
+    }
+
+    companion object {
+        private const val TAG = "VoiceRecognizer"
+    }
+}

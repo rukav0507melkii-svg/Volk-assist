@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ассистент — превью интерфейса</title>
+<style>
+  :root {
+    --bg-start: #0A0E27;
+    --bg-mid: #13183A;
+    --bg-end: #1A0B2E;
+    --cyan: #00F0FF;
+    --purple: #B026FF;
+    --pink: #FF2E9A;
+    --blue: #3D5AFE;
+    --card: #1E2148;
+    --stroke: #2A2F66;
+    --text-2: #A0AEC0;
+    --ok: #00E676;
+    --text: #FFFFFF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, 'Inter', 'Helvetica Neue', sans-serif;
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(176,38,255,.18), transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, rgba(0,240,255,.12), transparent 60%),
+      linear-gradient(135deg, var(--bg-start), var(--bg-mid) 55%, var(--bg-end));
+    background-attachment: fixed;
+    color: var(--text);
+    padding: 36px 20px 60px;
+  }
+  .page { max-width: 1180px; margin: 0 auto; }
+
+  /* ---------- Шапка ---------- */
+  header { text-align: center; margin-bottom: 26px; }
+  header h1 {
+    font-size: 34px; letter-spacing: 10px; font-weight: 600;
+    color: var(--cyan);
+    text-shadow: 0 0 24px rgba(0,240,255,.55);
+  }
+  header p { color: var(--text-2); margin-top: 10px; font-size: 14px; }
+
+  /* ---------- Табы ---------- */
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin: 26px auto 30px; max-width: 860px;
+  }
+  .tab {
+    padding: 10px 18px; border-radius: 22px; cursor: pointer;
+    background: rgba(30,33,72,.55); border: 1px solid var(--stroke);
+    color: var(--text-2); font-size: 13.5px; transition: all .25s ease;
+    user-select: none;
+  }
+  .tab:hover { border-color: var(--cyan); color: var(--text); }
+  .tab.active {
+    background: linear-gradient(45deg, var(--purple), var(--pink));
+    border-color: transparent; color: #fff; font-weight: 600;
+    box-shadow: 0 4px 18px rgba(176,38,255,.4);
+  }
+
+  /* ---------- Сцена ---------- */
+  .stage { display: flex; gap: 40px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+
+  /* ---------- Телефон ---------- */
+  .phone {
+    width: 380px; height: 796px; flex: none;
+    border-radius: 46px; padding: 10px;
+    background: #05070f;
+    border: 1px solid #262b5c;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 60px rgba(0,240,255,.07);
+    position: relative;
+  }
+  .screen-wrap {
+    width: 100%; height: 100%; border-radius: 37px; overflow: hidden; position: relative;
+    background: linear-gradient(135deg, var(--bg-start), var(--bg-mid) 55%, var(--bg-end));
+  }
+  .notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 22px; border-radius: 12px; background: #05070f; z-index: 30;
+  }
+  .homebar {
+    position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 4px; border-radius: 3px; background: rgba(255,255,255,.25); z-index: 30;
+  }
+
+  /* ---------- Экраны ---------- */
+  .step {
+    position: absolute; inset: 0; padding: 54px 26px 40px;
+    display: flex; flex-direction: column; align-items: center;
+    opacity: 0; pointer-events: none; transform: translateY(8px);
+    transition: opacity .35s ease, transform .35s ease;
+  }
+  .step.active { opacity: 1; pointer-events: auto; transform: none; }
+
+  .step h2 { font-size: 23px; font-weight: 600; margin-top: 14px; text-align: center; }
+  .step .sub { color: var(--text-2); font-size: 13.5px; text-align: center; margin-top: 10px; line-height: 1.55; }
+
+  .stepnum {
+    font-size: 11px; letter-spacing: 3px; color: var(--pink);
+    text-transform: uppercase; margin-top: 26px; font-weight: 600;
+  }
+
+  /* Логотип / микрофон большой */
+  .orb {
+    position: relative; width: 158px; height: 158px; margin-top: 30px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .orb .disc {
+    width: 118px; height: 118px; border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #7a5cff, var(--purple) 45%, var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 42px rgba(176,38,255,.55), inset 0 0 24px rgba(255,255,255,.15);
+    transition: box-shadow .3s ease, transform .15s ease;
+  }
+  .orb .disc svg { width: 46px; height: 46px; color: #fff; filter: drop-shadow(0 0 8px rgba(255,255,255,.6)); }
+  .ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid var(--cyan); opacity: 0; pointer-events: none;
+  }
+  .listening .ring { animation: pulse 1.8s ease-out infinite; }
+  .listening .ring:nth-child(2) { animation-delay: .6s; }
+  .listening .ring:nth-child(3) { animation-delay: 1.2s; }
+  .listening .disc {
+    box-shadow: 0 0 60px rgba(255,46,154,.75), inset 0 0 24px rgba(255,255,255,.2);
+    background: radial-gradient(circle at 32% 28%, #ff6ec1, var(--pink) 45%, #c026d3);
+  }
+  @keyframes pulse {
+    0%   { transform: scale(.58); opacity: .85; }
+    100% { transform: scale(1.3);  opacity: 0; }
+  }
+
+  .chips { display: flex; gap: 8px; margin-top: 26px; flex-wrap: wrap; justify-content: center; }
+  .chip {
+    padding: 7px 15px; border-radius: 20px; font-size: 12px; color: #fff;
+    background: linear-gradient(45deg, var(--purple), var(--pink));
+    box-shadow: 0 3px 14px rgba(176,38,255,.35);
+  }
+
+  /* ---------- Шаг 2: разрешения ---------- */
+  .perm-list { width: 100%; margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+  .perm {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--card); border: 1px solid var(--stroke);
+    border-radius: 16px; padding: 13px 16px; cursor: pointer;
+    transition: border-color .25s ease, transform .15s ease; user-select: none;
+  }
+  .perm:hover { border-color: var(--cyan); }
+  .perm:active { transform: scale(.98); }
+  .perm .dot {
+    width: 12px; height: 12px; border-radius: 50%; flex: none;
+    background: var(--stroke); transition: background .25s ease, box-shadow .25s ease;
+  }
+  .perm.granted .dot { background: var(--ok); box-shadow: 0 0 10px rgba(0,230,118,.7); }
+  .perm b { display: block; font-size: 14.5px; font-weight: 600; }
+  .perm span { display: block; color: var(--text-2); font-size: 12px; margin-top: 2px; }
+  .perm-hint { color: #5A6188; font-size: 11.5px; margin-top: 14px; text-align: center; }
+
+  /* ---------- Шаг 3: активация ---------- */
+  .wake-phrase {
+    margin-top: 26px; font-size: 21px; font-style: italic; font-weight: 600;
+    color: var(--cyan); text-shadow: 0 0 18px rgba(0,240,255,.6);
+  }
+  .switch-row {
+    width: 100%; margin-top: 30px; display: flex; align-items: center; gap: 14px;
+    background: var(--card); border: 1px solid var(--stroke); border-radius: 16px; padding: 15px 16px;
+  }
+  .switch-row label { flex: 1; font-size: 13.5px; line-height: 1.4; cursor: pointer; }
+  .toggle { position: relative; width: 48px; height: 26px; flex: none; cursor: pointer; }
+  .toggle input { display: none; }
+  .toggle .track {
+    position: absolute; inset: 0; border-radius: 14px; background: var(--stroke); transition: background .25s ease;
+  }
+  .toggle .thumb {
+    position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: transform .25s ease; box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  }
+  .toggle input:checked + .track { background: linear-gradient(45deg, var(--cyan), #4dd0e1); }
+  .toggle input:checked + .track + .thumb { transform: translateX(22px); }
+
+  /* ---------- Шаг 4: обучение ---------- */
+  .train-list { width: 100%; margin-top: 18px; display: flex; flex-direction: column; gap: 9px; overflow-y: auto; flex: 1; padding-bottom: 6px; }
+  .train-card {
+    background: var(--card); border: 1px solid var(--stroke); border-radius: 15px;
+    padding: 13px 16px; cursor: pointer; transition: border-color .25s ease, transform .12s ease, box-shadow .25s ease;
+    user-select: none;
+  }
+  .train-card:hover { border-color: var(--cyan); }
+  .train-card:active { transform: scale(.97); }
+  .train-card.playing {
+    border-color: var(--pink);
+    box-shadow: 0 0 20px rgba(255,46,154,.35);
+  }
+  .train-card .cmd { color: var(--cyan); font-size: 14.5px; font-style: italic; }
+  .train-card .ans { color: var(--text-2); font-size: 12px; margin-top: 4px; }
+  .demo-answer {
+    width: 100%; margin-top: 10px; background: var(--card); border: 1px solid var(--stroke);
+    border-radius: 15px; padding: 13px 16px; color: var(--cyan); font-size: 13.5px;
+    min-height: 20px; transition: opacity .3s ease;
+  }
+
+  /* ---------- Шаг 5 / главный экран ---------- */
+  .app-title {
+    font-size: 21px; letter-spacing: 6px; font-weight: 600; color: var(--cyan);
+    text-shadow: 0 0 16px rgba(0,240,255,.55); margin-top: 4px;
+  }
+  .status { color: var(--text-2); font-size: 13px; margin-top: 8px; text-align: center; min-height: 18px; }
+  .mic-orb { cursor: pointer; }
+  .mic-orb:active .disc { transform: scale(.95); }
+  .heard {
+    margin-top: 20px; color: var(--cyan); font-style: italic; font-size: 15.5px;
+    text-align: center; min-height: 22px; font-weight: 500;
+  }
+  .answer-card {
+    width: 100%; background: var(--card); border: 1px solid var(--stroke); border-radius: 18px;
+    padding: 16px 18px; margin-top: 14px; transition: opacity .3s ease;
+  }
+  .answer-card .label {
+    color: var(--pink); font-size: 10.5px; letter-spacing: 2px; font-weight: 600;
+  }
+  .answer-card .val { margin-top: 7px; font-size: 14.5px; line-height: 1.45; }
+  .log { width: 100%; flex: 1; margin-top: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .log-item { font-size: 13px; line-height: 1.4; animation: fadeUp .4s ease; }
+  .log-item .u { color: var(--cyan); font-style: italic; }
+  .log-item .a { color: var(--text-2); font-size: 12.5px; margin-top: 2px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .hint { color: #5A6188; font-size: 11px; text-align: center; margin-top: 10px; }
+
+  /* ---------- Кнопки внизу онбординга ---------- */
+  .nav { display: flex; gap: 10px; width: 100%; margin-top: auto; padding-top: 18px; }
+  .btn {
+    border-radius: 26px; padding: 15px 0; font-size: 14.5px; cursor: pointer;
+    text-align: center; user-select: none; transition: filter .2s ease, transform .12s ease;
+    font-weight: 600;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-ghost { flex: 1; border: 1px solid var(--cyan); color: var(--cyan); background: transparent; visibility: hidden; }
+  .btn-ghost.visible { visibility: visible; }
+  .btn-main { flex: 2; background: linear-gradient(45deg, var(--purple), var(--pink)); color: #fff; box-shadow: 0 6px 22px rgba(176,38,255,.4); }
+  .btn-main:hover { filter: brightness(1.12); }
+
+  /* ---------- Боковая панель ---------- */
+  .specs { width: 330px; display: flex; flex-direction: column; gap: 16px; }
+  .spec-card {
+    background: rgba(30,33,72,.5); border: 1px solid var(--stroke); border-radius: 20px; padding: 20px 22px;
+  }
+  .spec-card h3 { font-size: 13px; letter-spacing: 2px; color: var(--pink); font-weight: 600; margin-bottom: 14px; }
+  .cmd-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px dashed rgba(42,47,102,.6); font-size: 13px; }
+  .cmd-row:last-child { border-bottom: none; }
+  .cmd-row .c { color: var(--cyan); flex: none; }
+  .cmd-row .r { color: var(--text-2); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sw { width: 86px; }
+  .sw .box { height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); }
+  .sw .hex { font-size: 10.5px; color: var(--text-2); margin-top: 5px; text-align: center; font-family: monospace; }
+
+  footer.note { text-align: center; color: #5A6188; font-size: 12px; margin-top: 44px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>АССИСТЕНТ</h1>
+    <p>Интерактивное превью мобильного приложения · Android · полностью офлайн<br>
+       Нажимайте на элементы — макет живой</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-go="0">1 · Знакомство</button>
+    <button class="tab" data-go="1">2 · Разрешения</button>
+    <button class="tab" data-go="2">3 · Активация</button>
+    <button class="tab" data-go="3">4 · Обучение</button>
+    <button class="tab" data-go="4">Главный экран</button>
+  </nav>
+
+  <div class="stage">
+    <div class="phone" id="phone">
+      <div class="notch"></div>
+      <div class="screen-wrap">
+
+        <!-- ШАГ 1: Знакомство -->
+        <section class="step active" id="step0">
+          <div class="stepnum">Шаг 1 из 4</div>
+          <div class="orb">
+            <div class="disc">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+            </div>
+          </div>
+          <h2>Добро пожаловать!</h2>
+          <p class="sub">Ваш личный голосовой ассистент.<br>
+          Работает полностью офлайн — интернет не нужен:<br>
+          никакие данные не покидают телефон.</p>
+          <div class="chips">
+            <span class="chip">Будильники</span>
+            <span class="chip">Звонки</span>
+            <span class="chip">SMS</span>
+            <span class="chip">Таймеры</span>
+          </div>
+          <div class="nav">
+            <div class="btn btn-ghost">Назад</div>
+            <div class="btn btn-main" onclick="go(1)">Далее</div>
+          </div>
+        </section>
+
+        <!-- ШАГ 2: Разрешения -->
+        <section class="step" id="step1">
+          <div class="stepnum">Шаг 2 из 4</div>
+          <h2>Нужны разрешения</h2>
+          <p class="sub">Данные остаются только на вашем телефоне.<br>Нажмите на строку, чтобы выдать разрешение.</p>
+          <div class="perm-list">
+            <div class="perm" onclick="grant(this)"><div class="dot"></div>
+              <div><b>Микрофон</b><span>Распознавание ваших команд</span></div></div>
+            <div class="perm" onclick="grant(this)"><div class="dot"></div>
+              <div><b>Контакты</b><span>Поиск «позвони маме» в телефонной книге</span></div></div>
+            <div class="perm" onclick="grant(this)"><div class="dot"></div>
+              <div><b>Телефон</b><span>Набор номера контакта</span></div></div>
+            <div class="perm" onclick="grant(this)"><div class="dot"></div>
+              <div><b>SMS</b><span>Отправка и чтение сообщений вслух</span></div></div>
+            <div class="perm" onclick="grant(this)"><div class="dot"></div>
+              <div><b>Уведомления</b><span>Фоновое прослушивание фразы активации</span></div></div>
+          </div>
+          <div class="nav">
+            <div class="btn btn-ghost visible" onclick="go(0)">Назад</div>
+            <div class="btn btn-main" onclick="go(2)">Разрешить и продолжить</div>
+          </div>
+        </section>
+
+        <!-- ШАГ 3: Активация -->
+        <section class="step" id="step2">
+          <div class="stepnum">Шаг 3 из 4</div>
+          <h2>Как вас слушать</h2>
+          <div class="orb listening">
+            <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+            <div class="disc">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+            </div>
+          </div>
+          <p class="sub" style="margin-top:24px">Просто скажите:</p>
+          <div class="wake-phrase">«Окей Ассистент»</div>
+          <div class="switch-row">
+            <label for="wakeToggle"><b>Слушать фразу активации постоянно</b><br>
+            <span style="color:var(--text-2);font-size:12px">Можно и просто нажать на микрофон на главном экране</span></label>
+            <div class="toggle">
+              <input type="checkbox" id="wakeToggle" checked>
+              <div class="track"></div><div class="thumb"></div>
+            </div>
+          </div>
+          <div class="nav">
+            <div class="btn btn-ghost visible" onclick="go(1)">Назад</div>
+            <div class="btn btn-main" onclick="go(3)">Далее</div>
+          </div>
+        </section>
+
+        <!-- ШАГ 4: Обучение -->
+        <section class="step" id="step3">
+          <div class="stepnum">Шаг 4 из 4</div>
+          <h2>Попробуйте команды</h2>
+          <p class="sub">Нажмите на команду — ассистент произнесёт её вслух<br>и покажет свой ответ</p>
+          <div class="train-list">
+            <div class="train-card" onclick="playCmd(this,'Окей Ассистент, поставь будильник на семь утра','Будильник установлен на 07:00.')">
+              <div class="cmd">«поставь будильник на 7 утра»</div>
+              <div class="ans">→ Будильник установлен на 07:00</div>
+            </div>
+            <div class="train-card" onclick="playCmd(this,'Окей Ассистент, таймер на десять минут','Таймер на 10 мин запущен.')">
+              <div class="cmd">«таймер на 10 минут»</div>
+              <div class="ans">→ Таймер на 10 мин запущен</div>
+            </div>
+            <div class="train-card" onclick="playCmd(this,'Окей Ассистент, позвони маме','Звоню контакту «Мама»…')">
+              <div class="cmd">«позвони маме»</div>
+              <div class="ans">→ Звоню контакту «Мама»…</div>
+            </div>
+            <div class="train-card" onclick="playCmd(this,'Окей Ассистент, напиши Саше, что я опаздываю','Сообщение «я опаздываю» отправлено контакту Саша.')">
+              <div class="cmd">«напиши Саше я опаздываю»</div>
+              <div class="ans">→ Сообщение отправлено контакту Саша</div>
+            </div>
+            <div class="train-card" onclick="playCmd(this,'Окей Ассистент, сколько времени','Сейчас 14:30.')">
+              <div class="cmd">«сколько времени»</div>
+              <div class="ans">→ Сейчас 14:30</div>
+            </div>
+          </div>
+          <div class="demo-answer" id="demoAnswer">Нажмите на любую команду ↑</div>
+          <div class="nav">
+            <div class="btn btn-ghost visible" onclick="go(2)">Назад</div>
+            <div class="btn btn-main" onclick="go(4)">Начать работу</div>
+          </div>
+        </section>
+
+        <!-- ГЛАВНЫЙ ЭКРАН -->
+        <section class="step" id="step4">
+          <div class="app-title">АССИСТЕНТ</div>
+          <div class="status" id="status">Готов к работе · скажите «Окей Ассистент»</div>
+
+          <div class="orb mic-orb" id="micOrb" style="margin-top:34px">
+            <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+            <div class="disc">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+            </div>
+          </div>
+
+          <div class="heard" id="heard"></div>
+
+          <div class="answer-card" id="answerCard" style="visibility:hidden">
+            <div class="label">ОТВЕТ АССИСТЕНТА</div>
+            <div class="val" id="answerVal"></div>
+          </div>
+
+          <div class="log" id="log">
+            <div class="log-item"><div class="u">→ поставь будильник на 7 утра</div><div class="a">Будильник установлен на 07:00.</div></div>
+            <div class="log-item"><div class="u">→ позвони маме</div><div class="a">Звоню контакту «Мама»…</div></div>
+            <div class="log-item"><div class="u">→ таймер на 10 минут</div><div class="a">Таймер на 10 мин запущен.</div></div>
+          </div>
+
+          <div class="hint">Примеры: «поставь будильник на 7 утра» · «позвони маме» · «напиши саше я опаздываю»</div>
+        </section>
+
+      </div>
+      <div class="homebar"></div>
+    </div>
+
+    <!-- Боковая панель -->
+    <aside class="specs">
+      <div class="spec-card">
+        <h3>ГОЛОСОВЫЕ КОМАНДЫ</h3>
+        <div class="cmd-row"><div class="c">«поставь будильник на 7 утра»</div><div class="r">→ будильник в 07:00</div></div>
+        <div class="cmd-row"><div class="c">«таймер на 10 минут»</div><div class="r">→ таймер 10:00</div></div>
+        <div class="cmd-row"><div class="c">«позвони маме»</div><div class="r">→ звонок из телефонной книги</div></div>
+        <div class="cmd-row"><div class="c">«напиши саше я опаздываю»</div><div class="r">→ SMS контакту</div></div>
+        <div class="cmd-row"><div class="c">«сколько времени»</div><div class="r">→ время вслух</div></div>
+        <div class="cmd-row"><div class="c">«какая сегодня дата»</div><div class="r">→ дата вслух</div></div>
+      </div>
+      <div class="spec-card">
+        <h3>ПАЛИТРА ДИЗАЙНА</h3>
+        <div class="swatches">
+          <div class="sw"><div class="box" style="background:#0A0E27"></div><div class="hex">#0A0E27</div></div>
+          <div class="sw"><div class="box" style="background:#13183A"></div><div class="hex">#13183A</div></div>
+          <div class="sw"><div class="box" style="background:#1A0B2E"></div><div class="hex">#1A0B2E</div></div>
+          <div class="sw"><div class="box" style="background:#00F0FF"></div><div class="hex">#00F0FF</div></div>
+          <div class="sw"><div class="box" style="background:#B026FF"></div><div class="hex">#B026FF</div></div>
+          <div class="sw"><div class="box" style="background:#FF2E9A"></div><div class="hex">#FF2E9A</div></div>
+          <div class="sw"><div class="box" style="background:#1E2148"></div><div class="hex">#1E2148</div></div>
+          <div class="sw"><div class="box" style="background:#A0AEC0"></div><div class="hex">#A0AEC0</div></div>
+        </div>
+      </div>
+      <div class="spec-card">
+        <h3>ПРИНЦИПЫ</h3>
+        <div class="cmd-row"><div class="c">Офлайн</div><div class="r">распознавание и ответы без интернета</div></div>
+        <div class="cmd-row"><div class="c">Неон</div><div class="r">свечение на тёмном градиенте</div></div>
+        <div class="cmd-row"><div class="c">Карточки</div><div class="r">скругления 16–20px, тонкие обводки</div></div>
+        <div class="cmd-row"><div class="c">Отклик</div><div class="r">пульсация микрофона при прослушивании</div></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="note">
+    Это интерактивный макет дизайна приложения «Ассистент».<br>
+    Реальное приложение собирается из проекта assistant-app (Android Studio или GitHub Actions).
+  </footer>
+</div>
+
+<script>
+  // ---------- Переключение шагов ----------
+  const steps = [...document.querySelectorAll('.step')];
+  const tabs = [...document.querySelectorAll('.tab')];
+  function go(i) {
+    steps.forEach((s, k) => s.classList.toggle('active', k === i));
+    tabs.forEach(t => t.classList.toggle('active', +t.dataset.go === i));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => go(+t.dataset.go)));
+
+  // ---------- Разрешения ----------
+  function grant(el) { el.classList.toggle('granted'); }
+
+  // ---------- Обучение (озвучка примеров) ----------
+  const demoAnswer = document.getElementById('demoAnswer');
+  function playCmd(card, spoken, answer) {
+    document.querySelectorAll('.train-card').forEach(c => c.classList.remove('playing'));
+    card.classList.add('playing');
+    demoAnswer.textContent = '→ ' + answer;
+    if ('speechSynthesis' in window) {
+      try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(spoken);
+        u.lang = 'ru-RU';
+        u.rate = 1;
+        speechSynthesis.speak(u);
+      } catch (e) { /* озвучка недоступна — не критично */ }
+    }
+    setTimeout(() => card.classList.remove('playing'), 2600);
+  }
+
+  // ---------- Главный экран: симуляция диалога ----------
+  const micOrb = document.getElementById('micOrb');
+  const statusEl = document.getElementById('status');
+  const heardEl = document.getElementById('heard');
+  const answerCard = document.getElementById('answerCard');
+  const answerVal = document.getElementById('answerVal');
+  const logEl = document.getElementById('log');
+  let busy = false;
+
+  const scenario = [
+    { cmd: 'поставь будильник на 7 утра', ans: 'Будильник установлен на 07:00.' },
+    { cmd: 'позвони маме',               ans: 'Звоню контакту «Мама»…' },
+    { cmd: 'напиши саше я опаздываю',    ans: 'Сообщение «я опаздываю» отправлено контакту Саша.' },
+    { cmd: 'таймер на 10 минут',         ans: 'Таймер на 10 мин запущен.' },
+    { cmd: 'сколько времени',            ans: 'Сейчас 14:30.' }
+  ];
+  let scenarioIdx = 0;
+
+  micOrb.addEventListener('click', () => {
+    if (busy) return;
+    busy = true;
+    micOrb.classList.add('listening');
+    statusEl.textContent = 'Слушаю…';
+    heardEl.textContent = '';
+    answerCard.style.visibility = 'hidden';
+
+    setTimeout(() => {
+      const { cmd, ans } = scenario[scenarioIdx];
+      heardEl.textContent = '«' + cmd + '»';
+      statusEl.textContent = 'Обрабатываю…';
+    }, 1700);
+
+    setTimeout(() => {
+      const { cmd, ans } = scenario[scenarioIdx];
+      statusEl.textContent = 'Готов к работе · скажите «Окей Ассистент»';
+      micOrb.classList.remove('listening');
+      answerVal.textContent = ans;
+      answerCard.style.visibility = 'visible';
+
+      const item = document.createElement('div');
+      item.className = 'log-item';
+      item.innerHTML = '<div class="u">→ ' + cmd + '</div><div class="a">' + ans + '</div>';
+      logEl.prepend(item);
+
+      scenarioIdx = (scenarioIdx + 1) % scenario.length;
+      busy = false;
+    }, 3100);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+package com.zai.assistant
+
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.util.Log
+
+/**
+ * Простой wrapper над AudioRecord для записи 16-кГц моно PCM16.
+ */
+class AudioRecorder(private val sampleRate: Int) {
+
+    private var record: AudioRecord? = null
+    private val bufferSize = AudioRecord.getMinBufferSize(
+        sampleRate,
+        AudioFormat.CHANNEL_IN_MONO,
+        AudioFormat.ENCODING_PCM_16BIT
+    ).coerceAtLeast(1600)
+
+    fun start(): Boolean {
+        return try {
+            record = AudioRecord(
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
+            if (record?.state != AudioRecord.STATE_INITIALIZED) {
+                Log.e(TAG, "AudioRecord not initialized")
+                return false
+            }
+            record?.startRecording()
+            true
+        } catch (e: SecurityException) {
+            Log.e(TAG, "mic permission denied", e)
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "mic start error", e)
+            false
+        }
+    }
+
+    fun read(buffer: ShortArray): Int {
+        return record?.read(buffer, 0, buffer.size) ?: -1
+    }
+
+    fun stop() {
+        try { record?.stop() } catch (_: Exception) {}
+        record?.release()
+        record = null
+    }
+
+    companion object { private const val TAG = "AudioRecorder" }
+}

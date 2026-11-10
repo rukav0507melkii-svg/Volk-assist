@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Ассистент</string>
+    <string name="tap_to_speak">Нажмите или скажите «Окей Ассистент»</string>
+    <string name="listening">Слушаю…</string>
+    <string name="recognizing">Распознавание…</string>
+    <string name="ready">Готов к работе</string>
+    <string name="need_permissions">Для работы нужны разрешения</string>
+    <string name="grant">Разрешить</string>
+    <string name="no_command">Команда не распознана. Попробуйте ещё раз.</string>
+    <string name="channel_name">Ассистент</string>
+    <string name="channel_desc">Постоянное прослушивание фразы активации</string>
+    <string name="foreground_title">Ассистент слушает</string>
+    <string name="foreground_text">Скажите «Окей Ассистент»</string>
+    <string name="welcome">Привет! Я ваш офлайн-ассистент. Скажите «Окей Ассистент» или нажмите на микрофон.</string>
+</resources>

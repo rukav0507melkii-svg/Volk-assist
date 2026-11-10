@@ -1,0 +1,199 @@
+package com.zai.assistant
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import java.util.Locale
+
+/**
+ * Оконный мастер первого запуска:
+ * 1. Знакомство      — что умеет ассистент
+ * 2. Разрешения      — запрос всех разрешений
+ * 3. Активация       — фраза «Окей Ассистент» + переключатель
+ * 4. Обучение        — интерактивные карточки команд (TTS-прослушивание)
+ * 5. Готово          — переход на главный экран
+ */
+class OnboardingActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+
+    private var step = 0
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+
+    private lateinit var dots: List<View>
+    private lateinit var stepViews: List<View>
+    private lateinit var btnNext: TextView
+    private lateinit var btnBack: TextView
+    private lateinit var demoAnswer: TextView
+    private lateinit var wakeSwitch: SwitchCompat
+
+    private data class Perm(val permission: String, val dotId: Int)
+
+    private val perms = buildList {
+        add(Perm(Manifest.permission.RECORD_AUDIO, R.id.dotMic))
+        add(Perm(Manifest.permission.READ_CONTACTS, R.id.dotContacts))
+        add(Perm(Manifest.permission.CALL_PHONE, R.id.dotPhone))
+        add(Perm(Manifest.permission.SEND_SMS, R.id.dotSms))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(Perm(Manifest.permission.POST_NOTIFICATIONS, R.id.dotNotif))
+        }
+    }
+
+    private data class Example(val cardId: Int, val spoken: String, val answer: String)
+
+    private val examples = listOf(
+        Example(R.id.cardAlarm, "Окей Ассистент, поставь будильник на семь утра",
+            "Будильник установлен на 07:00."),
+        Example(R.id.cardTimer, "Окей Ассистент, таймер на десять минут",
+            "Таймер на 10 мин запущен."),
+        Example(R.id.cardCall, "Окей Ассистент, позвони маме",
+            "Звоню контакту «Мама»…"),
+        Example(R.id.cardSms, "Окей Ассистент, напиши Саше, что я опаздываю",
+            "Сообщение «я опаздываю» отправлено контакту Саша."),
+        Example(R.id.cardTime, "Окей Ассистент, сколько времени",
+            "Сейчас 14:30.")
+    )
+
+    private val nextLabels = listOf(
+        "Далее", "Разрешить и продолжить", "Далее", "Далее", "Начать работу"
+    )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_onboarding)
+
+        tts = TextToSpeech(this, this)
+
+        stepViews = listOf(
+            findViewById(R.id.step1), findViewById(R.id.step2), findViewById(R.id.step3),
+            findViewById(R.id.step4), findViewById(R.id.step5)
+        )
+        dots = listOf(
+            findViewById(R.id.dot1), findViewById(R.id.dot2), findViewById(R.id.dot3),
+            findViewById(R.id.dot4), findViewById(R.id.dot5)
+        )
+        btnNext = findViewById(R.id.btnNext)
+        btnBack = findViewById(R.id.btnBack)
+        demoAnswer = findViewById(R.id.demoAnswer)
+        wakeSwitch = findViewById(R.id.wakeSwitch)
+        wakeSwitch.isChecked = Prefs.isWakeEnabled(this)
+
+        btnNext.setOnClickListener { onNext() }
+        btnBack.setOnClickListener { if (step > 0) showStep(step - 1) }
+
+        // Обработка нажатий на карточки обучения
+        for (ex in examples) {
+            findViewById<View>(ex.cardId).setOnClickListener { v ->
+                demoAnswer.visibility = View.VISIBLE
+                demoAnswer.text = "→ ${ex.answer}"
+                v.animate().scaleX(0.97f).scaleY(0.97f).setDuration(90).withEndAction {
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(90).start()
+                }.start()
+                speak(ex.spoken)
+            }
+        }
+
+        showStep(0)
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            ttsReady = true
+            tts?.language = Locale("ru", "RU")
+        }
+    }
+
+    private fun speak(text: String) {
+        if (ttsReady) {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "onboarding_${System.currentTimeMillis()}")
+        }
+    }
+
+    private fun showStep(index: Int) {
+        step = index
+        stepViews.forEachIndexed { i, v -> v.visibility = if (i == index) View.VISIBLE else View.GONE }
+        dots.forEachIndexed { i, d ->
+            d.setBackgroundResource(if (i == index) R.drawable.dot_active else R.drawable.dot_inactive)
+        }
+        btnNext.text = nextLabels[index]
+        btnBack.visibility = if (index == 0) View.INVISIBLE else View.VISIBLE
+        if (index == 1) refreshPermissionDots()
+    }
+
+    private fun onNext() {
+        when (step) {
+            0 -> showStep(1)
+            1 -> {
+                requestNeededPermissions()
+                refreshPermissionDots()
+            }
+            2 -> {
+                Prefs.setWakeEnabled(this, wakeSwitch.isChecked)
+                showStep(3)
+            }
+            3 -> showStep(4)
+            4 -> finishOnboarding()
+        }
+    }
+
+    private fun finishOnboarding() {
+        Prefs.setOnboardingDone(this, true)
+        Prefs.setWakeEnabled(this, wakeSwitch.isChecked)
+        val micGranted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        if (micGranted) {
+            val intent = Intent(this, AssistantService::class.java).apply {
+                action = AssistantService.ACTION_START_LISTENING
+            }
+            ContextCompat.startForegroundService(this, intent)
+        }
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
+    }
+
+    // ---------- Разрешения ----------
+
+    private fun requestNeededPermissions() {
+        val toRequest = perms.map { it.permission }.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (toRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), 200)
+        }
+    }
+
+    private fun refreshPermissionDots() {
+        for (p in perms) {
+            val granted = ContextCompat.checkSelfPermission(this, p.permission) ==
+                    PackageManager.PERMISSION_GRANTED
+            val dot = findViewById<View>(p.dotId)
+            dot.setBackgroundResource(if (granted) R.drawable.dot_ok else R.drawable.dot_inactive)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 200) {
+            refreshPermissionDots()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
+    }
+}
